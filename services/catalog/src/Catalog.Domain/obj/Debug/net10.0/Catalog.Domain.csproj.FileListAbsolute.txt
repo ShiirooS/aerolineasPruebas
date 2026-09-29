@@ -1,0 +1,11 @@
+C:\Uni\aero\services\catalog\src\Catalog.Domain\bin\Debug\net10.0\Catalog.Domain.deps.json
+C:\Uni\aero\services\catalog\src\Catalog.Domain\bin\Debug\net10.0\Catalog.Domain.dll
+C:\Uni\aero\services\catalog\src\Catalog.Domain\bin\Debug\net10.0\Catalog.Domain.pdb
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\Catalog.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\Catalog.Domain.AssemblyInfoInputs.cache
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\Catalog.Domain.AssemblyInfo.cs
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\Catalog.Domain.csproj.CoreCompileInputs.cache
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\Catalog.Domain.dll
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\refint\Catalog.Domain.dll
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\Catalog.Domain.pdb
+C:\Uni\aero\services\catalog\src\Catalog.Domain\obj\Debug\net10.0\ref\Catalog.Domain.dll

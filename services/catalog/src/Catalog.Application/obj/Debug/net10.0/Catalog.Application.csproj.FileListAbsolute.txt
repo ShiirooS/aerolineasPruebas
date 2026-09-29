@@ -1,0 +1,15 @@
+C:\Uni\aero\services\catalog\src\Catalog.Application\bin\Debug\net10.0\Catalog.Application.deps.json
+C:\Uni\aero\services\catalog\src\Catalog.Application\bin\Debug\net10.0\Catalog.Application.dll
+C:\Uni\aero\services\catalog\src\Catalog.Application\bin\Debug\net10.0\Catalog.Application.pdb
+C:\Uni\aero\services\catalog\src\Catalog.Application\bin\Debug\net10.0\Catalog.Domain.dll
+C:\Uni\aero\services\catalog\src\Catalog.Application\bin\Debug\net10.0\Catalog.Domain.pdb
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.csproj.AssemblyReference.cache
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.AssemblyInfoInputs.cache
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.AssemblyInfo.cs
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.csproj.CoreCompileInputs.cache
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog..75771DFE.Up2Date
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.dll
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\refint\Catalog.Application.dll
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\Catalog.Application.pdb
+C:\Uni\aero\services\catalog\src\Catalog.Application\obj\Debug\net10.0\ref\Catalog.Application.dll

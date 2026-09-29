@@ -1,0 +1,8 @@
+{
+  "realm": "aeroapp",
+  "enabled": true,
+  "displayName": "AeroApp",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "sslRequired": "external"
+}
