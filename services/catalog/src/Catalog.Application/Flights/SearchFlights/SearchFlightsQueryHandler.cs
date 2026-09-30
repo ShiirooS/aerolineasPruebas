@@ -12,13 +12,16 @@ public sealed class SearchFlightsQueryHandler(IFlightSearchReadModel readModel)
         if (request.PassengerCount <= 0)
             throw new ArgumentOutOfRangeException(nameof(request.PassengerCount), request.PassengerCount, "La cantidad de pasajeros debe ser mayor a cero.");
 
+        if (request.DepartureDate is not { } departureDate)
+            throw new ArgumentException("La fecha de salida (departureDate) es obligatoria.", nameof(request.DepartureDate));
+
         var origin = new AirportCode(request.Origin);
         var destination = new AirportCode(request.Destination);
 
         if (origin == destination)
             throw new ArgumentException("El origen y el destino no pueden ser el mismo aeropuerto.", nameof(request.Destination));
 
-        var criteria = new FlightSearchCriteria(origin.Value, destination.Value, request.DepartureDate, request.PassengerCount, request.Cabin);
+        var criteria = new FlightSearchCriteria(origin.Value, destination.Value, departureDate, request.PassengerCount, request.Cabin);
 
         return readModel.SearchAsync(criteria, cancellationToken);
     }
