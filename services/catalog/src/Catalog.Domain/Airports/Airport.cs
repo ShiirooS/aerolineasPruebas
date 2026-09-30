@@ -32,6 +32,38 @@ public sealed class Airport : Entity<AirportCode>
         TimeZone = timeZone ?? throw new ArgumentNullException(nameof(timeZone));
     }
 
+    /// <summary>
+    /// Instante dado, expresado con el offset local vigente en este aeropuerto
+    /// en ese momento (respeta DST).
+    /// </summary>
+    public DateTimeOffset ToLocalTime(DateTimeOffset instant) =>
+        TimeZoneInfo.ConvertTime(instant, TimeZone);
+
+    /// <summary>
+    /// Rango [inicio, fin) en UTC que cubre el día calendario <paramref name="localDate"/>
+    /// según el reloj de este aeropuerto. Un pasajero que busca "vuelos del 10/10"
+    /// piensa en el día local del aeropuerto de origen, no en el día UTC.
+    /// </summary>
+    public (DateTimeOffset StartUtc, DateTimeOffset EndUtc) LocalDayBoundsUtc(DateOnly localDate) =>
+        (StartOfLocalDayUtc(localDate), StartOfLocalDayUtc(localDate.AddDays(1)));
+
+    private DateTimeOffset StartOfLocalDayUtc(DateOnly localDate)
+    {
+        var localMidnight = localDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+
+        // Medianoche ambigua (el reloj retrocede a las 00:00 y esa hora ocurre dos
+        // veces): el día empieza en la PRIMERA ocurrencia, que es la del offset mayor.
+        // Medianoche inválida (el reloj salta de 23:59 a 01:00, como en Chile al
+        // entrar en horario de verano): GetUtcOffset devuelve el offset estándar, y
+        // medianoche con offset estándar cae justo en el instante del salto, que es
+        // el primer momento real del día. Ambos casos están cubiertos en AirportTests.
+        var offset = TimeZone.IsAmbiguousTime(localMidnight)
+            ? TimeZone.GetAmbiguousTimeOffsets(localMidnight).Max()
+            : TimeZone.GetUtcOffset(localMidnight);
+
+        return new DateTimeOffset(localMidnight, offset).ToUniversalTime();
+    }
+
     public void Rename(string newName)
     {
         if (string.IsNullOrWhiteSpace(newName))

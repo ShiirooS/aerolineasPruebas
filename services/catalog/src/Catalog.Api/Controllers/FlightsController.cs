@@ -2,6 +2,7 @@ using Catalog.Api.Contracts.Flights;
 using Catalog.Application.Common.ReadModels;
 using Catalog.Application.Flights.AddFareClassToFlight;
 using Catalog.Application.Flights.CreateFlight;
+using Catalog.Application.Flights.GetFlight;
 using Catalog.Application.Flights.SearchFlights;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,10 @@ public sealed class FlightsController(ISender sender) : ControllerBase
         var results = await sender.Send(query, cancellationToken);
         return Ok(results);
     }
+
+    [HttpGet("{flightId:guid}")]
+    public async Task<ActionResult<FlightDetailsResult>> Get(Guid flightId, CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new GetFlightQuery(flightId), cancellationToken));
 
     [HttpPost]
     public async Task<ActionResult<CreateFlightResult>> Create(CreateFlightCommand command, CancellationToken cancellationToken)

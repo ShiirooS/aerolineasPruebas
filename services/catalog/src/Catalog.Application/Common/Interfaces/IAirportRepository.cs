@@ -7,5 +7,7 @@ public interface IAirportRepository
 {
     Task<Airport?> GetByIdAsync(AirportCode id, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Airport>> ListAsync(CancellationToken cancellationToken);
+
     Task AddAsync(Airport airport, CancellationToken cancellationToken);
 }

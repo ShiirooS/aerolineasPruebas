@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<IAirlineRepository, AirlineRepository>();
         services.AddScoped<IFlightSearchReadModel, FlightSearchReadModel>();
 
+        services.AddHealthChecks().AddDbContextCheck<CatalogDbContext>("catalog-db");
+
         return services;
     }
 }

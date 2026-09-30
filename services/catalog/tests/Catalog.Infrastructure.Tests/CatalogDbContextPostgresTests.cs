@@ -1,4 +1,5 @@
 using Catalog.Application.Common.ReadModels;
+using Catalog.Domain.Airports;
 using Catalog.Domain.Flights;
 using Catalog.Domain.ValueObjects;
 using Catalog.Infrastructure.Persistence;
@@ -44,7 +45,7 @@ public sealed class CatalogDbContextPostgresTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await _dbContext.Database.ExecuteSqlRawAsync(
-            "TRUNCATE TABLE catalog.fare_classes, catalog.flights, catalog.aircraft_types RESTART IDENTITY CASCADE;");
+            "TRUNCATE TABLE catalog.fare_classes, catalog.flights, catalog.aircraft_types, catalog.airports RESTART IDENTITY CASCADE;");
         await _dbContext.DisposeAsync();
     }
 
@@ -56,6 +57,7 @@ public sealed class CatalogDbContextPostgresTests : IAsyncLifetime
         flight.AddFareClass(CabinClass.Economy, new Money(120, "USD"), totalSeats: 150);
         flight.AddFareClass(CabinClass.Business, new Money(450, "USD"), totalSeats: 2);
 
+        _dbContext.Airports.AddRange(TestData.CreateScl(), TestData.CreateLim());
         _dbContext.AircraftTypes.Add(aircraftType);
         _dbContext.Flights.Add(flight);
         await _dbContext.SaveChangesAsync();
@@ -80,6 +82,7 @@ public sealed class CatalogDbContextPostgresTests : IAsyncLifetime
         var flight = TestData.CreateScLimFlight(aircraftType.Id);
         flight.AddFareClass(CabinClass.Economy, new Money(120, "USD"), totalSeats: 150);
 
+        _dbContext.Airports.AddRange(TestData.CreateScl(), TestData.CreateLim());
         _dbContext.AircraftTypes.Add(aircraftType);
         _dbContext.Flights.Add(flight);
         await _dbContext.SaveChangesAsync();
@@ -100,6 +103,12 @@ public sealed class CatalogDbContextPostgresTests : IAsyncLifetime
         var flight = TestData.CreateScLimFlight(aircraftType.Id);
         flight.AddFareClass(CabinClass.Economy, new Money(120, "USD"), totalSeats: 150);
 
+        // MIA tiene que existir: si no, la búsqueda corta antes de filtrar por ruta
+        // y este test pasaría por la razón equivocada.
+        _dbContext.Airports.AddRange(
+            TestData.CreateScl(),
+            TestData.CreateLim(),
+            new Airport(new AirportCode("MIA"), "Miami International", "Miami", "USA", TimeZoneInfo.FindSystemTimeZoneById("America/New_York")));
         _dbContext.AircraftTypes.Add(aircraftType);
         _dbContext.Flights.Add(flight);
         await _dbContext.SaveChangesAsync();
@@ -111,5 +120,33 @@ public sealed class CatalogDbContextPostgresTests : IAsyncLifetime
             CancellationToken.None);
 
         Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task FlightSearchReadModel_matches_the_origin_local_day_and_returns_local_offsets()
+    {
+        var aircraftType = TestData.CreateA320();
+        var flight = TestData.CreateLateNightLimSclFlight(aircraftType.Id);
+        flight.AddFareClass(CabinClass.Economy, new Money(199.90m, "USD"), totalSeats: 100);
+
+        _dbContext.Airports.AddRange(TestData.CreateScl(), TestData.CreateLim());
+        _dbContext.AircraftTypes.Add(aircraftType);
+        _dbContext.Flights.Add(flight);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+
+        var readModel = new FlightSearchReadModel(_dbContext);
+        var onLocalDay = await readModel.SearchAsync(
+            new FlightSearchCriteria("LIM", "SCL", new DateOnly(2026, 10, 10), PassengerCount: 1, Cabin: null),
+            CancellationToken.None);
+        var onUtcDay = await readModel.SearchAsync(
+            new FlightSearchCriteria("LIM", "SCL", new DateOnly(2026, 10, 11), PassengerCount: 1, Cabin: null),
+            CancellationToken.None);
+
+        var result = Assert.Single(onLocalDay);
+        Assert.Empty(onUtcDay);
+        Assert.Equal(new DateTimeOffset(2026, 10, 10, 22, 30, 0, TimeSpan.FromHours(-5)), result.DepartureAt);
+        Assert.Equal(TimeSpan.FromHours(-5), result.DepartureAt.Offset);
+        Assert.Equal(TimeSpan.FromHours(-3), result.ArrivalAt.Offset);
     }
 }

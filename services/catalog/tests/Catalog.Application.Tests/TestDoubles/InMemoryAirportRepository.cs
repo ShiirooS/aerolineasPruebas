@@ -11,6 +11,9 @@ internal sealed class InMemoryAirportRepository(params Airport[] airports) : IAi
     public Task<Airport?> GetByIdAsync(AirportCode id, CancellationToken cancellationToken) =>
         Task.FromResult(_airports.FirstOrDefault(a => a.Id == id));
 
+    public Task<IReadOnlyList<Airport>> ListAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Airport>>(_airports);
+
     public Task AddAsync(Airport airport, CancellationToken cancellationToken)
     {
         _airports.Add(airport);
