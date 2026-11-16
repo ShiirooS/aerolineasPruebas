@@ -1,0 +1,10 @@
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.5rem 1rem;
+  align-items: start;
+}
+
+button {
+  align-self: center;
+}

@@ -1,0 +1,16 @@
+<h1>Buscar vuelos</h1>
+<app-flight-search-form
+  [airports]="airports()"
+  [disabled]="loading()"
+  (search)="onSearch($event)"
+/>
+@if (results() !== null || loading() || error()) {
+  <section class="results">
+    <app-flight-results
+      [flights]="results() ?? []"
+      [airports]="airports()"
+      [loading]="loading()"
+      [error]="error()"
+    />
+  </section>
+}

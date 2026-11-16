@@ -1,1 +1,25 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+html {
+  @include mat.theme(
+    (
+      color: mat.$azure-palette,
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+:root {
+  --color-primary: var(--mat-sys-primary);
+  --color-muted: var(--mat-sys-on-surface-variant);
+  --color-border: var(--mat-sys-outline-variant);
+  --color-error: var(--mat-sys-error);
+}
+
+body {
+  margin: 0;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+}
