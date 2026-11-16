@@ -35,7 +35,6 @@ export AWS_ENDPOINT_URL=https://127.0.0.1:$port
 export AWS_SHARED_CREDENTIALS_FILE=$dir/emulator_credentials
 export AWS_CONFIG_FILE=$dir/config
 export AWS_CA_BUNDLE=$dir/ca.pem
-export SSL_CERT_FILE=$dir/ca.pem
 export AWS_EC2_METADATA_DISABLED=true
 export AWS_DISABLE_HOST_PREFIX_INJECTION=true
 export AWS_REGION=us-east-1

@@ -55,11 +55,11 @@ jobs:
           aws-emulator -v
           aws --version
 
-      - name: Arrancar la cuenta AWS emulada de ${{ inputs.environment }}
-        run: infra/aws/emulator.sh "$TARGET_ENV" start
-
-      - name: Desplegar en ${{ inputs.environment }}
-        run: infra/aws/deploy.sh "$TARGET_ENV" artifact
+      # Mismo paso que el job aws-deploy-smoke de ci.yml (probado en cada PR).
+      - name: Desplegar en ${{ inputs.environment }} (emulado)
+        run: |
+          infra/aws/emulator.sh "$TARGET_ENV" start
+          infra/aws/deploy.sh "$TARGET_ENV" artifact
 
       - name: Log del emulador
         if: failure()
