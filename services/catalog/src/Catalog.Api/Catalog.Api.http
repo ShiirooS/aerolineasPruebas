@@ -1,6 +1,62 @@
 @Catalog.Api_HostAddress = http://localhost:5095
 
-GET {{Catalog.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Salud (incluye conexión a Postgres)
+GET {{Catalog.Api_HostAddress}}/health
+
+### Aeropuertos
+POST {{Catalog.Api_HostAddress}}/api/airports
+Content-Type: application/json
+
+{ "code": "LIM", "name": "Jorge Chávez", "city": "Lima", "country": "Perú", "timeZoneId": "America/Lima" }
 
 ###
+POST {{Catalog.Api_HostAddress}}/api/airports
+Content-Type: application/json
+
+{ "code": "SCL", "name": "Arturo Merino Benítez", "city": "Santiago", "country": "Chile", "timeZoneId": "America/Santiago" }
+
+###
+GET {{Catalog.Api_HostAddress}}/api/airports
+
+###
+GET {{Catalog.Api_HostAddress}}/api/airports/LIM
+
+### Aerolínea
+POST {{Catalog.Api_HostAddress}}/api/airlines
+Content-Type: application/json
+
+{ "code": "LA", "name": "LATAM" }
+
+### Tipo de aeronave (copiar el aircraftTypeId de la respuesta)
+POST {{Catalog.Api_HostAddress}}/api/aircraft-types
+Content-Type: application/json
+
+{ "model": "Airbus A320", "seatMap": { "Economy": 150, "Business": 12 } }
+
+### Vuelo: sale 22:30 hora de Lima, que en UTC ya es el día siguiente
+@aircraftTypeId = 00000000-0000-0000-0000-000000000000
+POST {{Catalog.Api_HostAddress}}/api/flights
+Content-Type: application/json
+
+{
+  "airlineCode": "LA",
+  "flightNumber": 2400,
+  "origin": "LIM",
+  "destination": "SCL",
+  "aircraftTypeId": "{{aircraftTypeId}}",
+  "departureAt": "2026-10-10T22:30:00-05:00",
+  "arrivalAt": "2026-10-11T04:00:00-03:00"
+}
+
+### Tarifa (copiar el flightId de la respuesta anterior)
+@flightId = 00000000-0000-0000-0000-000000000000
+POST {{Catalog.Api_HostAddress}}/api/flights/{{flightId}}/fare-classes
+Content-Type: application/json
+
+{ "cabin": "Economy", "price": 199.90, "currency": "USD", "totalSeats": 100 }
+
+###
+GET {{Catalog.Api_HostAddress}}/api/flights/{{flightId}}
+
+### Búsqueda por día LOCAL del origen: encuentra el vuelo de las 22:30 del 10/10
+GET {{Catalog.Api_HostAddress}}/api/flights?origin=LIM&destination=SCL&departureDate=2026-10-10&passengerCount=2

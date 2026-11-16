@@ -1,0 +1,4 @@
+{
+  "environment": "preprod",
+  "apiBaseUrl": "https://api.preprod.aeroapp.example"
+}

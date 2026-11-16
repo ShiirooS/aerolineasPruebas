@@ -1,0 +1,83 @@
+# Pipeline de promoción: se construye UNA vez y el mismo artefacto pasa por
+# dev -> qa -> preprod -> prod.
+#
+# - dev y qa se despliegan solos.
+# - preprod y prod son GitHub Environments protegidos: esperan aprobación manual
+#   y solo aceptan despliegues desde main.
+# - Cada ambiente se despliega en su propia "cuenta AWS" emulada (AWS Emulator)
+#   con infra/aws/deploy.sh. Para AWS real, solo cambia _deploy-env.yml.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Construir artefacto
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Publicar Catalog.Api
+        run: dotnet publish services/catalog/src/Catalog.Api -c Release -o out/catalog-api
+
+      - name: Build web
+        working-directory: web
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          cp -r dist/aeroapp-web/browser ../out/web
+          cp -r config ../out/web-config
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aeroapp-${{ github.sha }}
+          path: out/
+          retention-days: 30
+
+  dev:
+    needs: build
+    uses: ./.github/workflows/_deploy-env.yml
+    with:
+      environment: dev
+
+  qa:
+    needs: dev
+    uses: ./.github/workflows/_deploy-env.yml
+    with:
+      environment: qa
+
+  preprod:
+    needs: qa
+    uses: ./.github/workflows/_deploy-env.yml
+    with:
+      environment: preprod
+
+  prod:
+    needs: preprod
+    uses: ./.github/workflows/_deploy-env.yml
+    with:
+      environment: prod

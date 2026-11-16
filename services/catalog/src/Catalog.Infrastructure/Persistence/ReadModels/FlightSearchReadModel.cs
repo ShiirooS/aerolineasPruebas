@@ -10,24 +10,23 @@ internal sealed class FlightSearchReadModel(CatalogDbContext dbContext) : IFligh
     {
         var origin = new AirportCode(criteria.Origin);
         var destination = new AirportCode(criteria.Destination);
-        var dayStart = new DateTimeOffset(criteria.DepartureDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var dayEnd = dayStart.AddDays(1);
 
-        // NOTA sobre verificación: este Where no se pudo confirmar contra SQLite.
-        // Un test de integración (ver CatalogDbContextTests) mostró que ni la
-        // igualdad sobre AirportCode ni la comparación de rango sobre DateTimeOffset
-        // traducen bajo el proveedor de SQLite — pero ambas son limitaciones
-        // documentadas de ESE proveedor específico (SQLite no tiene tipo nativo de
-        // fecha con offset ni sabe traducir el == generado de un record de tipo
-        // referencia), no necesariamente de Npgsql/Postgres, que sí soporta
-        // timestamptz nativo y tiene un traductor de consultas más completo. Queda
-        // pendiente confirmar esto en vivo contra Postgres real (falta Docker); si
-        // falla ahí también, la salida es SQL crudo (FromSqlInterpolated) o filtrar
-        // en memoria como se probó en un intento anterior de este mismo archivo.
+        // Los aeropuertos se cargan primero porque la fecha buscada es el día LOCAL
+        // del origen (un vuelo que sale 22:30 en Lima el 10/10 es "del 10/10",
+        // aunque en UTC ya sea el 11/10). Si alguno no existe, no puede haber vuelos.
+        var originAirport = await dbContext.Airports.FindAsync([origin], cancellationToken);
+        var destinationAirport = await dbContext.Airports.FindAsync([destination], cancellationToken);
+
+        if (originAirport is null || destinationAirport is null)
+            return [];
+
+        var (dayStartUtc, dayEndUtc) = originAirport.LocalDayBoundsUtc(criteria.DepartureDate);
+
         var flights = await dbContext.Flights
             .AsNoTracking()
             .Where(f => f.Origin == origin && f.Destination == destination)
-            .Where(f => f.DepartureAt >= dayStart && f.DepartureAt < dayEnd)
+            .Where(f => f.DepartureAt >= dayStartUtc && f.DepartureAt < dayEndUtc)
+            .OrderBy(f => f.DepartureAt)
             .ToListAsync(cancellationToken);
 
         return flights
@@ -37,8 +36,10 @@ internal sealed class FlightSearchReadModel(CatalogDbContext dbContext) : IFligh
                 f.Number.ToString(),
                 f.Origin.Value,
                 f.Destination.Value,
-                f.DepartureAt,
-                f.ArrivalAt,
+                // Cada hora con el offset de SU aeropuerto: salida en hora del origen,
+                // llegada en hora del destino, como en una tarjeta de embarque.
+                originAirport.ToLocalTime(f.DepartureAt),
+                destinationAirport.ToLocalTime(f.ArrivalAt),
                 f.FareClasses
                     .Where(fc => fc.AvailableSeats >= criteria.PassengerCount)
                     .Where(fc => criteria.Cabin == null || fc.Cabin == criteria.Cabin)

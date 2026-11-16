@@ -21,6 +21,18 @@ public class SearchFlightsQueryHandlerTests
     }
 
     [Fact]
+    public async Task Handle_without_departure_date_throws()
+    {
+        var readModel = new CapturingFlightSearchReadModel();
+        var handler = new SearchFlightsQueryHandler(readModel);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => handler.Handle(
+            new SearchFlightsQuery("SCL", "LIM", DepartureDate: null),
+            CancellationToken.None));
+        Assert.Null(readModel.LastCriteria);
+    }
+
+    [Fact]
     public async Task Handle_defaults_passenger_count_to_one()
     {
         var readModel = new CapturingFlightSearchReadModel();

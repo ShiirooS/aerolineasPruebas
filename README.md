@@ -21,20 +21,35 @@ docs/           PRD y documentación
 
 ```bash
 cd infra
-cp .env.example .env
-docker compose up -d
+cp .env.dev.example .env.dev
+./env.sh dev up        # equivale al antiguo `docker compose up -d`
 ```
 
 Esto levanta:
 - **Postgres** en `localhost:5432` (esquemas `catalog`, `booking`, `payments`, `notifications` ya creados)
 - **Redis** en `localhost:6379`
-- **Keycloak** en `http://localhost:8080` (realm `aeroapp` importado, admin console con las credenciales de `.env`)
+- **Keycloak** en `http://localhost:8080` (realm `aeroapp` importado, admin console con las credenciales de `.env.dev`)
 
 Verificar que los tres contenedores están sanos:
 
 ```bash
-docker compose ps
+./env.sh dev ps
 ```
+
+## Ambientes: dev, qa, preprod, prod
+
+Cada ambiente tiene su configuración de API (`appsettings.<Ambiente>.json`), de web
+(`config.json` leído al arrancar) e infraestructura local (`infra/.env.<amb>`), y un
+GitHub Environment para el pipeline de despliegue. Cada ambiente se despliega en su
+propia cuenta AWS emulada con [AWS Emulator](https://github.com/aws/aws-emulator)
+(`infra/aws/`). Detalle en [`docs/AMBIENTES.md`](docs/AMBIENTES.md).
+
+| Ambiente | API (`ASPNETCORE_ENVIRONMENT`) | Infra local | Despliegue |
+|---|---|---|---|
+| dev | `Development` | `./env.sh dev up` (puertos 5432/6379/8080) | automático |
+| qa | `QA` | `./env.sh qa up` (15432/16379/18080) | automático |
+| preprod | `Preprod` | `./env.sh preprod up` (25432/26379/28080) | aprobación manual, solo `main` |
+| prod | `Production` | `./env.sh prod up` (35432/36379/38080) | aprobación manual, solo `main` |
 
 ## Fases del proyecto
 

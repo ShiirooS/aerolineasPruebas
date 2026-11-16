@@ -51,6 +51,20 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "qa": {
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public",
+                  "ignore": ["config.json"]
+                },
+                {
+                  "glob": "config.json",
+                  "input": "config/qa",
+                  "output": "/"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -63,6 +77,10 @@
             },
             "development": {
               "buildTarget": "aeroapp-web:build:development"
+            },
+            "qa": {
+              "buildTarget": "aeroapp-web:build:development,qa",
+              "port": 4201
             }
           },
           "defaultConfiguration": "development"

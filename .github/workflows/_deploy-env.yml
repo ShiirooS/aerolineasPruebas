@@ -1,0 +1,66 @@
+# Despliega el artefacto construido en deploy.yml en UN ambiente.
+# Las variables por ambiente (vars.*) y las aprobaciones viven en
+# GitHub > Settings > Environments.
+#
+# Destino: un AWS Emulator nuevo en el runner, que hace de "cuenta AWS" del
+# ambiente. Se despliega con infra/aws/deploy.sh, el mismo script que en local
+# (CloudFormation + S3 + SSM + Secrets Manager). El emulador vive solo lo que
+# dura el job: el despliegue se verifica y se descarta. Para pasar a AWS real
+# bastará con cambiar de dónde salen las credenciales y quitar el emulador.
+name: Deploy environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: dev | qa | preprod | prod
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Desplegar en ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    env:
+      TARGET_ENV: ${{ inputs.environment }}
+      RELEASE_VERSION: ${{ github.sha }}
+      EXPECTED_ASPNETCORE_ENVIRONMENT: ${{ vars.ASPNETCORE_ENVIRONMENT }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: aeroapp-${{ github.sha }}
+          path: artifact
+
+      # La variable del GitHub Environment y infra/aws/lib.sh deben coincidir.
+      - name: Comprobar ASPNETCORE_ENVIRONMENT
+        run: |
+          source infra/aws/lib.sh
+          actual=$(aws_env_aspnetcore "$TARGET_ENV")
+          if [ "$actual" != "$EXPECTED_ASPNETCORE_ENVIRONMENT" ]; then
+            echo "::error::GitHub Environment dice '$EXPECTED_ASPNETCORE_ENVIRONMENT' pero infra/aws/lib.sh dice '$actual'"
+            exit 1
+          fi
+
+      - name: Instalar AWS Emulator
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSLo /tmp/aws-emulator.deb https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/latest/aws-emulator_amd64.deb
+          sudo apt-get install -y /tmp/aws-emulator.deb
+          aws-emulator -v
+          aws --version
+
+      # Mismo paso que el job aws-deploy-smoke de ci.yml (probado en cada PR).
+      - name: Desplegar en ${{ inputs.environment }} (emulado)
+        run: |
+          infra/aws/emulator.sh "$TARGET_ENV" start
+          infra/aws/deploy.sh "$TARGET_ENV" artifact
+
+      - name: Log del emulador
+        if: failure()
+        run: cat ~/.aws/emulator/"$TARGET_ENV".log || true

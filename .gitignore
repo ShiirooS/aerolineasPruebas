@@ -16,6 +16,7 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.*.example
 
 # Editores y sistema
 .idea/
@@ -24,3 +25,6 @@ coverage/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# Artefacto local de infra/aws/build-artifact.sh
+out/
