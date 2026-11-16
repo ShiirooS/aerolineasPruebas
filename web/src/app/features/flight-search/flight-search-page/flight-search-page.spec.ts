@@ -21,8 +21,8 @@ const PARAMS: FlightSearchParams = {
 };
 const FLIGHT: FlightSearchResult = {
   flightId: 'f1',
-  airlineCode: 'IB',
-  flightNumber: '3001',
+  airlineCode: 'AX',
+  flightNumber: 'AX101',
   origin: 'MAD',
   destination: 'BCN',
   departureAt: '2026-12-25T08:00:00+01:00',
@@ -60,7 +60,7 @@ describe('FlightSearchPage', () => {
     await setup(() => of([FLIGHT]));
     await triggerSearch();
     expect(searchFlights).toHaveBeenCalledWith(PARAMS);
-    expect(text()).toContain('IB 3001');
+    expect(text()).toContain('AX101');
   });
 
   it('muestra el estado vacío', async () => {

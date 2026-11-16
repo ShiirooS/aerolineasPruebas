@@ -4,8 +4,8 @@ import { FlightResults } from './flight-results';
 
 const FLIGHT: FlightSearchResult = {
   flightId: 'f1',
-  airlineCode: 'IB',
-  flightNumber: '3001',
+  airlineCode: 'AX',
+  flightNumber: 'AX101',
   origin: 'MAD',
   destination: 'BCN',
   departureAt: '2026-12-25T08:00:00+01:00',
@@ -25,7 +25,8 @@ describe('FlightResults', () => {
   it('renderiza los vuelos con tarifas', async () => {
     fixture.componentRef.setInput('flights', [FLIGHT]);
     await fixture.whenStable();
-    expect(text()).toContain('IB 3001');
+    expect(text()).toContain('AX101');
+    expect(text()).not.toContain('AXAX101');
     expect(text()).toContain('MAD → BCN');
     expect(text()).toContain('Sale:');
     expect(text()).toContain('Llega:');
