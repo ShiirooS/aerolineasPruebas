@@ -1,0 +1,44 @@
+# Despliega el artefacto construido en deploy.yml en UN ambiente.
+# Las variables por ambiente (vars.*) y las aprobaciones viven en
+# GitHub > Settings > Environments.
+name: Deploy environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: dev | qa | preprod | prod
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Desplegar en ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    env:
+      TARGET_ENV: ${{ inputs.environment }}
+      ASPNETCORE_ENVIRONMENT: ${{ vars.ASPNETCORE_ENVIRONMENT }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: aeroapp-${{ github.sha }}
+          path: artifact
+
+      # Mismo bundle de Angular en todos los ambientes: solo cambia config.json.
+      # dev usa el que ya trae el build (web/public/config.json).
+      - name: Configuración del frontend para ${{ inputs.environment }}
+        run: |
+          if [ "$TARGET_ENV" != "dev" ]; then
+            cp "artifact/web-config/$TARGET_ENV/config.json" artifact/web/config.json
+          fi
+          cat artifact/web/config.json
+
+      - name: Desplegar (PLACEHOLDER, todavía no hay destino)
+        run: |
+          echo "::notice title=Sin destino de despliegue::$TARGET_ENV aprobado. Artefacto listo: Catalog.Api (ASPNETCORE_ENVIRONMENT=$ASPNETCORE_ENVIRONMENT) + web. Falta configurar dónde se despliega."
+          ls artifact

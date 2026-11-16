@@ -1,0 +1,4 @@
+{
+  "environment": "qa",
+  "apiBaseUrl": "http://localhost:5095"
+}
