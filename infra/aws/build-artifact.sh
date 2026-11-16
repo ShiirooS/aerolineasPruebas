@@ -3,7 +3,7 @@
 #
 #   ./build-artifact.sh [carpeta-salida]     (por defecto: out/ en la raíz del repo)
 #
-# Requiere web/node_modules instalado en esta máquina (cd web && npm ci).
+# Requiere web/node_modules instalado en esta máquina (cd web && npm ci --ignore-scripts).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -14,7 +14,7 @@ mkdir -p "$out"
 
 dotnet publish "$root/services/catalog/src/Catalog.Api" -c Release -o "$out/catalog-api"
 
-(cd "$root/web" && npx ng build)
+(cd "$root/web" && npm run build)
 cp -r "$root/web/dist/aeroapp-web/browser" "$out/web"
 cp -r "$root/web/config" "$out/web-config"
 

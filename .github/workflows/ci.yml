@@ -68,13 +68,14 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - run: npm ci
+      # --ignore-scripts: ninguna dependencia ejecuta scripts al instalarse.
+      - run: npm ci --ignore-scripts
 
       - name: Tests
-        run: npx ng test --watch=false
+        run: npm test -- --watch=false
 
       - name: Build
-        run: npx ng build
+        run: npm run build
 
   # Despliega el artefacto en un AWS Emulator (cuenta "dev") con el mismo
   # script que el pipeline. Así cada PR comprueba que la infraestructura
@@ -98,12 +99,12 @@ jobs:
 
       - name: Construir artefacto
         run: |
-          (cd web && npm ci)
+          (cd web && npm ci --ignore-scripts)
           infra/aws/build-artifact.sh artifact
 
       - name: Instalar AWS Emulator
         run: |
-          curl -fsSLo /tmp/aws-emulator.deb https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/latest/aws-emulator_amd64.deb
+          curl --proto '=https' --tlsv1.2 -fsSLo /tmp/aws-emulator.deb https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/latest/aws-emulator_amd64.deb
           sudo apt-get install -y /tmp/aws-emulator.deb
           aws-emulator -v
           aws --version

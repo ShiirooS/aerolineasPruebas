@@ -16,6 +16,63 @@ Parameters:
     Description: URL pública de la API que usa el frontend.
 
 Resources:
+  # Destino de los logs de acceso de los otros buckets. Es el bucket que RECIBE
+  # los logs: registrarse a sí mismo crearía un bucle de logs (AWS lo
+  # desaconseja), por eso no tiene LoggingConfiguration.
+  AccessLogsBucket:
+    Type: AWS::S3::Bucket # NOSONAR destino de los logs de acceso, ver arriba
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub aeroapp-access-logs-${EnvName}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expirar-logs
+            Status: Enabled
+            ExpirationInDays: 90
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvName
+
+  AccessLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccessLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt AccessLogsBucket.Arn
+              - !Sub "${AccessLogsBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+          - Sid: AllowS3ServerAccessLogs
+            Effect: Allow
+            Principal:
+              Service: logging.s3.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub "${AccessLogsBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
   # Frontend: el build de Angular + el config.json del ambiente.
   WebBucket:
     Type: AWS::S3::Bucket
@@ -24,9 +81,32 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: index.html # rutas de la SPA
+      VersioningConfiguration:
+        Status: Enabled # permite volver a la versión anterior de la web
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogsBucket
+        LogFilePrefix: web/
       Tags:
         - Key: Environment
           Value: !Ref EnvName
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt WebBucket.Arn
+              - !Sub "${WebBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
 
   # Releases de la API: cada despliegue sube catalog-api/<versión>.zip.
   # Versionado + Retain: nunca se pierde un release al borrar el stack.
@@ -38,9 +118,35 @@ Resources:
       BucketName: !Sub aeroapp-releases-${EnvName}
       VersioningConfiguration:
         Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogsBucket
+        LogFilePrefix: releases/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: Environment
           Value: !Ref EnvName
+
+  ReleasesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReleasesBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt ReleasesBucket.Arn
+              - !Sub "${ReleasesBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
 
   # Registro de imágenes para cuando Catalog.Api corra en contenedores (ECS/EKS).
   CatalogApiRepository:
@@ -84,6 +190,8 @@ Resources:
           Value: !Ref EnvName
 
 Outputs:
+  AccessLogsBucketName:
+    Value: !Ref AccessLogsBucket
   WebBucketName:
     Value: !Ref WebBucket
   ReleasesBucketName:

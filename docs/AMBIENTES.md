@@ -24,16 +24,22 @@ push a main ──► CI ──► build (artefacto) ──► dev ──► qa 
 ## Backend (Catalog.Api)
 
 - `appsettings.json` es la base; `appsettings.<Ambiente>.json` la sobrescribe.
-- dev y qa traen su cadena de conexión al Postgres local de su stack.
-- **preprod y prod no traen secretos en el repo** (es público). La cadena de conexión y
-  los orígenes CORS llegan por variables de entorno:
+- Solo dev trae su cadena de conexión (al Postgres local, `aeroapp/aeroapp`).
+- **qa, preprod y prod no traen credenciales en el repo** (es público). La cadena de
+  conexión y los orígenes CORS llegan por variables de entorno:
   ```bash
   ConnectionStrings__CatalogDb="Host=...;Password=..."
   Cors__AllowedOrigins__0="https://app.ejemplo.com"
   ```
   Si falta la cadena, la API no arranca ("Falta la cadena de conexión 'CatalogDb'").
 - Correr la API local en un ambiente: `dotnet run --launch-profile qa` (perfiles `http`
-  = dev, `qa`, `preprod`, `production` en `Properties/launchSettings.json`).
+  = dev, `qa`, `preprod`, `production` en `Properties/launchSettings.json`). Para qa
+  contra su stack local (la contraseña sale de `infra/.env.qa`, que no se versiona):
+  ```bash
+  (source infra/.env.qa && cd services/catalog/src/Catalog.Api && \
+    ConnectionStrings__CatalogDb="Host=localhost;Port=$POSTGRES_PORT;Database=$POSTGRES_DB;Username=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Search Path=catalog" \
+    dotnet run --launch-profile qa)
+  ```
 
 ## Frontend (Angular)
 
