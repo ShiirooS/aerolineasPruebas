@@ -40,8 +40,9 @@ Verificar que los tres contenedores están sanos:
 
 Cada ambiente tiene su configuración de API (`appsettings.<Ambiente>.json`), de web
 (`config.json` leído al arrancar) e infraestructura local (`infra/.env.<amb>`), y un
-GitHub Environment para el pipeline de despliegue. Detalle en
-[`docs/AMBIENTES.md`](docs/AMBIENTES.md).
+GitHub Environment para el pipeline de despliegue. Cada ambiente se despliega en su
+propia cuenta AWS emulada con [AWS Emulator](https://github.com/aws/aws-emulator)
+(`infra/aws/`). Detalle en [`docs/AMBIENTES.md`](docs/AMBIENTES.md).
 
 | Ambiente | API (`ASPNETCORE_ENVIRONMENT`) | Infra local | Despliegue |
 |---|---|---|---|

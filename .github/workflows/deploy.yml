@@ -4,8 +4,8 @@
 # - dev y qa se despliegan solos.
 # - preprod y prod son GitHub Environments protegidos: esperan aprobación manual
 #   y solo aceptan despliegues desde main.
-# - El paso de despliegue es un PLACEHOLDER: todavía no hay servidores. Cuando
-#   existan, solo cambia _deploy-env.yml.
+# - Cada ambiente se despliega en su propia "cuenta AWS" emulada (AWS Emulator)
+#   con infra/aws/deploy.sh. Para AWS real, solo cambia _deploy-env.yml.
 name: Deploy
 
 on:

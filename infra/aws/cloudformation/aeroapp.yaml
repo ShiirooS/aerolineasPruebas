@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  AeroApp - recursos de UN ambiente. Cada ambiente vive en su propia cuenta AWS
+  (aquí: su propio AWS Emulator), así que los nombres de SSM/Secrets/ECR no
+  llevan el ambiente; los buckets sí, porque los nombres de S3 son globales.
+
+Parameters:
+  EnvName:
+    Type: String
+    AllowedValues: [dev, qa, preprod, prod]
+  AspNetCoreEnvironment:
+    Type: String
+    AllowedValues: [Development, QA, Preprod, Production]
+  ApiBaseUrl:
+    Type: String
+    Description: URL pública de la API que usa el frontend.
+
+Resources:
+  # Frontend: el build de Angular + el config.json del ambiente.
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub aeroapp-web-${EnvName}
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html # rutas de la SPA
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvName
+
+  # Releases de la API: cada despliegue sube catalog-api/<versión>.zip.
+  # Versionado + Retain: nunca se pierde un release al borrar el stack.
+  ReleasesBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub aeroapp-releases-${EnvName}
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvName
+
+  # Registro de imágenes para cuando Catalog.Api corra en contenedores (ECS/EKS).
+  CatalogApiRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: aeroapp/catalog-api
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvName
+
+  # Configuración no secreta (Parameter Store).
+  AspNetCoreEnvironmentParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /aeroapp/catalog-api/aspnetcore-environment
+      Type: String
+      Value: !Ref AspNetCoreEnvironment
+
+  ApiBaseUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /aeroapp/web/api-base-url
+      Type: String
+      Value: !Ref ApiBaseUrl
+
+  # Credenciales de la base de datos: las genera AWS, nunca pasan por el repo.
+  CatalogDbSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: aeroapp/catalog-api/db
+      Description: !Sub Usuario y contraseña de Postgres de Catalog.Api (${EnvName})
+      GenerateSecretString:
+        SecretStringTemplate: '{"username":"aeroapp"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludePunctuation: true
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvName
+
+Outputs:
+  WebBucketName:
+    Value: !Ref WebBucket
+  ReleasesBucketName:
+    Value: !Ref ReleasesBucket
+  CatalogApiRepositoryUri:
+    Value: !GetAtt CatalogApiRepository.RepositoryUri
+  CatalogDbSecretArn:
+    Value: !Ref CatalogDbSecret
