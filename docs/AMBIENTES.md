@@ -24,16 +24,22 @@ push a main ──► CI ──► build (artefacto) ──► dev ──► qa 
 ## Backend (Catalog.Api)
 
 - `appsettings.json` es la base; `appsettings.<Ambiente>.json` la sobrescribe.
-- dev y qa traen su cadena de conexión al Postgres local de su stack.
-- **preprod y prod no traen secretos en el repo** (es público). La cadena de conexión y
-  los orígenes CORS llegan por variables de entorno:
+- Solo dev trae su cadena de conexión (al Postgres local, `aeroapp/aeroapp`).
+- **qa, preprod y prod no traen credenciales en el repo** (es público). La cadena de
+  conexión y los orígenes CORS llegan por variables de entorno:
   ```bash
   ConnectionStrings__CatalogDb="Host=...;Password=..."
   Cors__AllowedOrigins__0="https://app.ejemplo.com"
   ```
   Si falta la cadena, la API no arranca ("Falta la cadena de conexión 'CatalogDb'").
 - Correr la API local en un ambiente: `dotnet run --launch-profile qa` (perfiles `http`
-  = dev, `qa`, `preprod`, `production` en `Properties/launchSettings.json`).
+  = dev, `qa`, `preprod`, `production` en `Properties/launchSettings.json`). Para qa
+  contra su stack local (la contraseña sale de `infra/.env.qa`, que no se versiona):
+  ```bash
+  (source infra/.env.qa && cd services/catalog/src/Catalog.Api && \
+    ConnectionStrings__CatalogDb="Host=localhost;Port=$POSTGRES_PORT;Database=$POSTGRES_DB;Username=$POSTGRES_USER;Password=$POSTGRES_PASSWORD;Search Path=catalog" \
+    dotnet run --launch-profile qa)
+  ```
 
 ## Frontend (Angular)
 
@@ -69,12 +75,71 @@ cp .env.qa.example .env.qa     # una vez por ambiente
 - Cada uno tiene la variable `ASPNETCORE_ENVIRONMENT`. Los secretos (cadenas de
   conexión, etc.) se agregan como *Environment secrets* cuando haya servidores.
 
+## AWS emulado (`infra/aws/`)
+
+Cada ambiente se despliega en su propia **"cuenta AWS"**, que localmente es un
+[AWS Emulator](https://github.com/aws/aws-emulator) en su propio puerto. Es lo mismo que
+se hace en AWS real: una cuenta por ambiente, aisladas entre sí.
+
+| Ambiente | Puerto del emulador | Buckets |
+|---|---|---|
+| dev | 9297 | `aeroapp-web-dev`, `aeroapp-releases-dev` |
+| qa | 9298 | `aeroapp-web-qa`, `aeroapp-releases-qa` |
+| preprod | 9299 | `aeroapp-web-preprod`, `aeroapp-releases-preprod` |
+| prod | 9300 | `aeroapp-web-prod`, `aeroapp-releases-prod` |
+
+Qué crea `cloudformation/aeroapp.yaml` en cada cuenta (stack `aeroapp`):
+- **S3** `aeroapp-web-<amb>`: el build de Angular con el `config.json` del ambiente.
+- **S3** `aeroapp-releases-<amb>` (versionado, se conserva): `catalog-api/<versión>.zip`.
+- **ECR** `aeroapp/catalog-api`: para cuando la API corra en contenedores.
+- **SSM Parameter Store**: `/aeroapp/catalog-api/aspnetcore-environment`,
+  `/aeroapp/web/api-base-url` y `/aeroapp/catalog-api/release` (versión desplegada).
+- **Secrets Manager** `aeroapp/catalog-api/db`: usuario y contraseña generados por AWS.
+
+### Uso local
+
+Requisitos: Docker (en Arch no hay paquete del emulador; `emulator.sh` construye la
+imagen con el Dockerfile oficial la primera vez) y la AWS CLI v2.
+
+```bash
+cd web && npm ci && cd ..                 # una vez (node_modules de ESTA máquina)
+infra/aws/build-artifact.sh               # artefacto en out/ (igual que el pipeline)
+
+infra/aws/emulator.sh qa start            # arranca la "cuenta" de qa
+infra/aws/deploy.sh qa out                # despliega
+
+eval "$(infra/aws/emulator.sh qa env)"    # apunta la AWS CLI a la cuenta de qa
+aws s3 ls
+aws ssm get-parameter --name /aeroapp/catalog-api/release
+
+infra/aws/emulator.sh qa stop             # al parar se borra todo (vive en memoria)
+```
+
+### Seguridad
+
+- `deploy.sh` **solo despliega contra el emulador**: si la AWS CLI no apunta a
+  `127.0.0.1` con la cuenta `000000000000`, se detiene.
+- El emulador solo escucha en `127.0.0.1` y su telemetría va apagada.
+
+### Limitaciones (honestas)
+
+- El emulador guarda todo **en memoria**: al pararlo se pierde lo desplegado. En CI
+  cada job arranca uno nuevo, despliega, verifica y lo descarta.
+- No ejecuta la API: la API queda como release (zip en S3 + versión en SSM), no como
+  servicio corriendo. Tampoco sirve la web como sitio público (no hay endpoint de
+  website de S3); se verifica leyendo los objetos.
+- No evalúa políticas IAM: no sirve para probar seguridad.
+- Pasar a AWS real = credenciales reales (p. ej. OIDC de GitHub → rol por cuenta) y
+  quitar el emulador de `_deploy-env.yml`. La plantilla y `deploy.sh` (sin el candado)
+  sirven igual.
+
 ## Workflows
 
 - `.github/workflows/ci.yml`: tests de backend (con Postgres) y frontend en cada push
-  a ramas que no son `main` y en cada PR.
+  a ramas que no son `main` y en cada PR, más un despliegue de prueba en un AWS
+  emulado (cuenta dev) para detectar plantillas o scripts rotos antes del merge.
 - `.github/workflows/deploy.yml`: en cada push a `main` corre CI, construye el
   artefacto y lo promueve por los 4 ambientes.
-- `.github/workflows/_deploy-env.yml`: despliegue de un ambiente. **Hoy es un
-  placeholder** (no hay servidores todavía): prepara el artefacto y la config, pero no
-  despliega en ningún lado. Cuando haya un destino real, solo cambia este archivo.
+- `.github/workflows/_deploy-env.yml`: despliegue de un ambiente en su cuenta AWS
+  emulada con `infra/aws/deploy.sh`. Comprueba además que la variable
+  `ASPNETCORE_ENVIRONMENT` del GitHub Environment coincide con `infra/aws/lib.sh`.
