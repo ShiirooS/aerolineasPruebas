@@ -1,0 +1,67 @@
+<form (submit)="submit($event)" novalidate>
+  <mat-form-field>
+    <mat-label>Origen</mat-label>
+    <mat-select [formField]="searchForm.origin" data-testid="origin">
+      @for (a of airportOptions(); track a.code) {
+        <mat-option [value]="a.code">{{ a.label }}</mat-option>
+      }
+    </mat-select>
+    @if (searchForm.origin().touched() && searchForm.origin().invalid()) {
+      <mat-error>Selecciona el origen.</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Destino</mat-label>
+    <mat-select [formField]="searchForm.destination" data-testid="destination">
+      @for (a of airportOptions(); track a.code) {
+        <mat-option [value]="a.code">{{ a.label }}</mat-option>
+      }
+    </mat-select>
+    @if (searchForm.destination().touched() && searchForm.destination().invalid()) {
+      <mat-error>
+        {{ searchForm.destination().errors()[0]?.message ?? 'Selecciona el destino.' }}
+      </mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Fecha</mat-label>
+    <input
+      matInput
+      [matDatepicker]="picker"
+      [formField]="searchForm.departureDate"
+      data-testid="date"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-datepicker #picker />
+    @if (searchForm.departureDate().touched() && searchForm.departureDate().invalid()) {
+      <mat-error>Indica la fecha.</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Pasajeros</mat-label>
+    <input
+      matInput
+      type="number"
+      [formField]="searchForm.passengerCount"
+      data-testid="passengers"
+    />
+    @if (searchForm.passengerCount().touched() && searchForm.passengerCount().invalid()) {
+      <mat-error>Entre 1 y 9 pasajeros.</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Cabina (opcional)</mat-label>
+    <mat-select [formField]="searchForm.cabin" data-testid="cabin">
+      <mat-option value="">Cualquiera</mat-option>
+      @for (c of cabins; track c.value) {
+        <mat-option [value]="c.value">{{ c.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-flat-button type="submit" [disabled]="disabled()">Buscar vuelos</button>
+</form>

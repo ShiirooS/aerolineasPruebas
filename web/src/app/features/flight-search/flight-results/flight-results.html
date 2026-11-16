@@ -1,0 +1,40 @@
+@if (loading()) {
+  <div class="state" role="status">
+    <mat-progress-spinner mode="indeterminate" diameter="32" />
+    <span>Buscando vuelos…</span>
+  </div>
+} @else if (error(); as message) {
+  <p class="state error" role="alert">{{ message }}</p>
+} @else if (flights().length === 0) {
+  <p class="state">No hay vuelos para esa búsqueda</p>
+} @else {
+  <ul class="flights">
+    @for (f of flights(); track f.flightId) {
+      <li>
+        <mat-card class="flight">
+          <mat-card-header>
+            <mat-card-title>{{ f.flightNumber }}</mat-card-title>
+            <mat-card-subtitle>{{ f.origin }} → {{ f.destination }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="times">
+              <span class="departure">Sale: {{ formatTime(f.departureAt, f.origin) }}</span>
+              <span class="arrival">Llega: {{ formatTime(f.arrivalAt, f.destination) }}</span>
+            </div>
+            <ul class="fares">
+              @for (fare of f.fareClasses; track fare.cabin) {
+                <li class="fare">
+                  <span class="cabin">{{ fare.cabin }}</span>
+                  <span class="price">{{
+                    fare.price | currency: fare.currency : 'symbol' : '1.2-2'
+                  }}</span>
+                  <span class="seats">{{ fare.availableSeats }} asientos</span>
+                </li>
+              }
+            </ul>
+          </mat-card-content>
+        </mat-card>
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,55 @@
+.state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--color-muted);
+
+  &.error {
+    color: var(--color-error);
+  }
+}
+
+.flights,
+.fares {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.flights {
+  display: grid;
+  gap: 1rem;
+}
+
+.times {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.fares {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.fare {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+
+  .price {
+    font-weight: 600;
+  }
+
+  .seats {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+}
